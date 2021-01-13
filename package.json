@@ -10,7 +10,11 @@
     "shell": "npm run build && firebase functions:shell",
     "start": "npm run shell",
     "deploy": "firebase deploy --only functions",
-    "logs": "firebase functions:log"
+    "logs": "firebase functions:log",
+    "prettier:write": "./node_modules/prettier/bin-prettier.js --write ./src/**/*.{ts,tsx}",
+    "prettier": "./node_modules/prettier/bin-prettier.js --check './src/**/*.{ts,tsx}'",
+    "lint": "./node_modules/.bin/eslint src/**/*.{ts,tsx}",
+    "firebase": "firebase"
   },
   "keywords": [],
   "author": "Nftfy Team",
