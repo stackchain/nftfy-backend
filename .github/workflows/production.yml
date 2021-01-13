@@ -4,6 +4,7 @@ on:
   create:
     tags:
       - v/*
+      - '!main'
 
 jobs:
   build_production:
