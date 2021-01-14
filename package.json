@@ -6,9 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc",
-    "serve": "npm run build && firebase emulators:start --only functions",
+    "start": "tsc -w | firebase emulators:start --only functions",
     "shell": "npm run build && firebase functions:shell",
-    "start": "npm run shell",
     "deploy": "firebase deploy --only functions",
     "logs": "firebase functions:log",
     "prettier:write": "./node_modules/prettier/bin-prettier.js --write ./src/**/*.{ts,tsx}",
@@ -22,6 +21,7 @@
   "dependencies": {
     "@sentry/node": "^5.30.0",
     "@sentry/tracing": "^5.30.0",
+    "dotenv": "^8.2.0",
     "express": "^4.17.1",
     "firebase-admin": "^9.4.2",
     "firebase-functions": "^3.13.0"

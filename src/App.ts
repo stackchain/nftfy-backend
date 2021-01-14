@@ -1,8 +1,11 @@
 import * as Sentry from '@sentry/node'
 import * as Tracing from '@sentry/tracing'
+import dotenv from 'dotenv'
 import express from 'express'
 import * as functions from 'firebase-functions'
 import router from './routes'
+
+dotenv.config()
 
 const app = express()
 
