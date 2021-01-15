@@ -7,7 +7,7 @@ on:
 jobs:
   build_staging:
     runs-on: ubuntu-latest
-
+    environment: staging
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v1
