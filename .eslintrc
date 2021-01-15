@@ -33,7 +33,8 @@
         "vars": "all",
         "varsIgnorePattern": "[I]\\w+"
       }
-    ]
+    ],
+    "no-plusplus": "off"
   },
   "settings": {
     "import/resolver": {
