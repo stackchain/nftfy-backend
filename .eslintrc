@@ -34,7 +34,8 @@
         "varsIgnorePattern": "[I]\\w+"
       }
     ],
-    "no-plusplus": "off"
+    "no-plusplus": "off",
+    "camelcase": "off"
   },
   "settings": {
     "import/resolver": {
