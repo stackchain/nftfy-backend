@@ -1,6 +1,6 @@
 export interface ERC20 {
   address: string
-  tokenId: string
+  balance: number
 }
 
 export interface ERC721 {

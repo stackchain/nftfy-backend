@@ -1,6 +1,7 @@
 import { log } from 'firebase-functions/lib/logger'
 import { flatten } from 'lodash'
 import { AbiItem } from 'web3-utils'
+import erc20SharesAbi from '../abi/erc20shares.json'
 import erc721Abi from '../abi/erc721.json'
 import erc721WrappedAbi from '../abi/erc721wrapped.json'
 import nftfyAbi from '../abi/nftfy.json'
@@ -12,11 +13,7 @@ export async function getERC721Items(walletAddress: string): Promise<ERC721[]> {
   const web3 = initializeWeb3()
 
   // TODO: Get from firebase
-  const addressesERC721 = [
-    '0xE0394f4404182F537AC9F2F9695a4a4CD74a1ea3',
-    '0xe48773a75B337AC258a471c00c6b450907b614Bc',
-    '0x2421e5ec36634e4d08116835d2a99191463f583a'
-  ]
+  const addressesERC721 = ['0xE0394f4404182F537AC9F2F9695a4a4CD74a1ea3', '0xe48773a75b337ac258a471c00c6b450907b614bc']
 
   const getERC721Item = async (addressERC721: string) => {
     const erc721: ERC721[] = []
@@ -59,11 +56,7 @@ export async function getERC20Items(walletAddress: string): Promise<ERC20[]> {
   const contractNftfy = new web3.eth.Contract(nftfyAbi as AbiItem[], addressNftfy)
 
   // TODO: Get from firebase
-  const addressesERC721 = [
-    '0xE0394f4404182F537AC9F2F9695a4a4CD74a1ea3',
-    '0xe48773a75B337AC258a471c00c6b450907b614Bc',
-    '0x2421e5ec36634e4d08116835d2a99191463f583a'
-  ]
+  const addressesERC721 = ['0xE0394f4404182F537AC9F2F9695a4a4CD74a1ea3', '0xe48773a75b337ac258a471c00c6b450907b614bc']
   const addressesWrappedERC721Promises: Promise<string>[] = []
 
   addressesERC721.forEach(addressERC721 => addressesWrappedERC721Promises.push(contractNftfy.methods.wrappers(addressERC721).call()))
@@ -72,11 +65,9 @@ export async function getERC20Items(walletAddress: string): Promise<ERC20[]> {
     addressWrapped721 => addressWrapped721 !== '0x0000000000000000000000000000000000000000'
   )
 
-  const getErc20 = async (addressWrapperERC721: string): Promise<string[]> => {
-    const contractWrapperErc721 = new web3.eth.Contract(erc721WrappedAbi as AbiItem[], addressWrapperERC721)
-
+  const getErc20 = async (addressERC721Wrapper: string): Promise<string[]> => {
+    const contractWrapperErc721 = new web3.eth.Contract(erc721WrappedAbi as AbiItem[], addressERC721Wrapper)
     const historyLength = await contractWrapperErc721.methods.historyLength().call()
-
     const erc20Promises: Promise<string>[] = []
 
     for (let i = 0; i < historyLength; i++) {
@@ -94,7 +85,18 @@ export async function getERC20Items(walletAddress: string): Promise<ERC20[]> {
 
   const erc20 = flatten(await Promise.all(erc20Promises))
 
-  console.log('erc20', erc20)
+  const getERC20Balance = async (addressErc20: string): Promise<{ address: string; balance: number }> => {
+    const contractWrapperErc721 = new web3.eth.Contract(erc20SharesAbi as AbiItem[], addressErc20)
+    const balance = await contractWrapperErc721.methods.balanceOf(walletAddress).call()
 
-  return [{ address: '123', tokenId: '1' }]
+    return { address: addressErc20, balance }
+  }
+
+  const erc20WithBalancePromises: Promise<{ address: string; balance: number }>[] = []
+
+  for (let i = 0; i < erc20.length; i++) {
+    erc20WithBalancePromises.push(getERC20Balance(erc20[i]))
+  }
+
+  return flatten((await Promise.all(erc20WithBalancePromises)).filter(erc20Item => erc20Item.balance > 0))
 }
