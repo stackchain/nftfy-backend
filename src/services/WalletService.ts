@@ -1,3 +1,4 @@
+import axios from 'axios'
 import { log } from 'firebase-functions/lib/logger'
 import { flatten } from 'lodash'
 import { AbiItem } from 'web3-utils'
@@ -5,21 +6,26 @@ import erc20SharesAbi from '../abi/erc20shares.json'
 import erc721Abi from '../abi/erc721.json'
 import erc721WrappedAbi from '../abi/erc721wrapped.json'
 import nftfyAbi from '../abi/nftfy.json'
-import { ERC20, ERC721 } from '../types/EthereumTypes'
+import { ERC20, WalletErc721Item, WalletItem } from '../types/EthereumTypes'
 import initializeWeb3 from './Web3Service'
 
-export async function getERC721Items(walletAddress: string): Promise<ERC721[]> {
+// TODO: Get from firebase
+const addressesERC721 = ['0xE0394f4404182F537AC9F2F9695a4a4CD74a1ea3', '0xe48773a75b337ac258a471c00c6b450907b614bc']
+const addressNftfy = '0x727638740980aA0aA0B346d02dd91120Eaac75ed'
+
+async function getERC721Items(walletAddress: string): Promise<WalletErc721Item[]> {
   log(`getERC721Items - start - ${walletAddress}`)
   const web3 = initializeWeb3()
 
-  // TODO: Get from firebase
-  const addressesERC721 = ['0xE0394f4404182F537AC9F2F9695a4a4CD74a1ea3', '0xe48773a75b337ac258a471c00c6b450907b614bc']
-
   const getERC721Item = async (addressERC721: string) => {
-    const erc721: ERC721[] = []
+    let erc721Items: WalletErc721Item[] = []
     const contractERC721 = new web3.eth.Contract(erc721Abi as AbiItem[], addressERC721)
 
     const totalTokens = await contractERC721.methods.balanceOf(walletAddress).call()
+
+    const name = await contractERC721.methods.name().call()
+    const symbol = await contractERC721.methods.symbol().call()
+
     const tokensIdsPromises = []
 
     for (let i = 0; i < totalTokens; i++) {
@@ -29,13 +35,52 @@ export async function getERC721Items(walletAddress: string): Promise<ERC721[]> {
     const tokensIds = await Promise.all(tokensIdsPromises)
 
     tokensIds.forEach(tokenId => {
-      erc721.push({ address: addressERC721, tokenId })
+      erc721Items.push({
+        address: addressERC721,
+        tokenId,
+        name,
+        symbol,
+        image_url: ''
+      })
     })
 
-    return erc721
+    const getErc721Metadata = async (address: string, tokenId: string) => {
+      const metadata = await axios.get<{ description: string; image_url: string }>(
+        `https://rinkeby-api.opensea.io/api/v1/asset/${address}/${tokenId}/`
+      )
+
+      const { description, image_url } = metadata.data
+
+      return { address, tokenId, description, image_url }
+    }
+
+    const erc721ItemsMetadataPromises: Promise<{
+      address: string
+      tokenId: string
+      description: string
+      image_url: string
+    }>[] = []
+
+    erc721Items.forEach(erc721Item => erc721ItemsMetadataPromises.push(getErc721Metadata(erc721Item.address, erc721Item.tokenId)))
+
+    const erc721ItemsMetadata = await Promise.all(erc721ItemsMetadataPromises)
+
+    erc721Items = erc721Items.map(erc721Item => {
+      const metadata = erc721ItemsMetadata.find(
+        erc721ItemMetadata => erc721Item.address === erc721ItemMetadata.address && erc721Item.tokenId === erc721ItemMetadata.tokenId
+      )
+
+      if (metadata) {
+        return { ...erc721Item, image_url: metadata.image_url, description: metadata.description }
+      }
+
+      return erc721Item
+    })
+
+    return erc721Items
   }
 
-  const erc721Promises: Promise<ERC721[]>[] = []
+  const erc721Promises: Promise<WalletErc721Item[]>[] = []
 
   addressesERC721.forEach(addressERC721 => {
     erc721Promises.push(getERC721Item(addressERC721))
@@ -47,16 +92,11 @@ export async function getERC721Items(walletAddress: string): Promise<ERC721[]> {
   return flatten(erc721)
 }
 
-export async function getERC20Items(walletAddress: string): Promise<ERC20[]> {
+async function getERC20Items(walletAddress: string): Promise<ERC20[]> {
   const web3 = initializeWeb3()
-  const erc721 = await getERC721Items(walletAddress)
 
-  // TODO: Get from firebase
-  const addressNftfy = '0x727638740980aA0aA0B346d02dd91120Eaac75ed'
   const contractNftfy = new web3.eth.Contract(nftfyAbi as AbiItem[], addressNftfy)
 
-  // TODO: Get from firebase
-  const addressesERC721 = ['0xE0394f4404182F537AC9F2F9695a4a4CD74a1ea3', '0xe48773a75b337ac258a471c00c6b450907b614bc']
   const addressesWrappedERC721Promises: Promise<string>[] = []
 
   addressesERC721.forEach(addressERC721 => addressesWrappedERC721Promises.push(contractNftfy.methods.wrappers(addressERC721).call()))
@@ -100,3 +140,19 @@ export async function getERC20Items(walletAddress: string): Promise<ERC20[]> {
 
   return flatten((await Promise.all(erc20WithBalancePromises)).filter(erc20Item => erc20Item.balance > 0))
 }
+
+export const getWalletItems = async (walletAddress: string): Promise<WalletItem[]> => {
+  const items: WalletItem[] = []
+
+  const erc721Items = await getERC721Items(walletAddress)
+
+  erc721Items.forEach(erc721Item => {
+    items.push({
+      erc721: erc721Item
+    })
+  })
+
+  return items
+}
+
+export default getWalletItems

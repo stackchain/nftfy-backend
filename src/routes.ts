@@ -1,9 +1,8 @@
 import express from 'express'
-import { walletERC20, walletERC721 } from './controllers/WalletController'
+import walletItems from './controllers/WalletController'
 
 const router = express.Router()
 
-router.get('/wallet/:wallet/erc20', walletERC20)
-router.get('/wallet/:wallet/erc721', walletERC721)
+router.get('/wallet/:wallet', walletItems)
 
 export default router
