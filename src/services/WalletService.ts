@@ -6,12 +6,22 @@ import erc20SharesAbi from '../abi/erc20shares.json'
 import erc721Abi from '../abi/erc721.json'
 import erc721WrappedAbi from '../abi/erc721wrapped.json'
 import nftfyAbi from '../abi/nftfy.json'
-import { WalletErc721Item, WalletItem } from '../types/EthereumTypes'
+import { WalletERC20Item, WalletErc721Item, WalletItem } from '../types/EthereumTypes'
 import initializeWeb3 from './Web3Service'
 
 // TODO: Get from firebase
 const addressesERC721 = ['0xE0394f4404182F537AC9F2F9695a4a4CD74a1ea3', '0xe48773a75b337ac258a471c00c6b450907b614bc']
 const addressNftfy = '0x727638740980aA0aA0B346d02dd91120Eaac75ed'
+
+const getErc721Metadata = async (address: string, tokenId: string) => {
+  const metadata = await axios.get<{ description: string; image_url: string }>(
+    `https://rinkeby-api.opensea.io/api/v1/asset/${address}/${tokenId}/`
+  )
+
+  const { description, image_url } = metadata.data
+
+  return { address, tokenId, description, image_url }
+}
 
 async function getERC721Items(walletAddress: string): Promise<WalletErc721Item[]> {
   log(`getERC721Items - start - ${walletAddress}`)
@@ -39,20 +49,9 @@ async function getERC721Items(walletAddress: string): Promise<WalletErc721Item[]
         address: addressERC721,
         tokenId,
         name,
-        symbol,
-        image_url: ''
+        symbol
       })
     })
-
-    const getErc721Metadata = async (address: string, tokenId: string) => {
-      const metadata = await axios.get<{ description: string; image_url: string }>(
-        `https://rinkeby-api.opensea.io/api/v1/asset/${address}/${tokenId}/`
-      )
-
-      const { description, image_url } = metadata.data
-
-      return { address, tokenId, description, image_url }
-    }
 
     const erc721ItemsMetadataPromises: Promise<{
       address: string
@@ -71,7 +70,12 @@ async function getERC721Items(walletAddress: string): Promise<WalletErc721Item[]
       )
 
       if (metadata) {
-        return { ...erc721Item, image_url: metadata.image_url, description: metadata.description }
+        const erc721ItemClone = { ...erc721Item }
+
+        erc721ItemClone.image_url = metadata.image_url
+        erc721ItemClone.description = metadata.description
+
+        return erc721ItemClone
       }
 
       return erc721Item
@@ -126,31 +130,24 @@ async function getERC20Items(walletAddress: string): Promise<WalletItem[]> {
 
   const erc20 = flatten(await Promise.all(erc20Promises))
 
-  const getERC20Balance = async (addressErc20: string): Promise<{ address: string; name: string; symbol: string; balance: number }> => {
-    const contractWrapperErc721 = new web3.eth.Contract(erc20SharesAbi as AbiItem[], addressErc20)
-    const balance = await contractWrapperErc721.methods.balanceOf(walletAddress).call()
-    const name = await contractWrapperErc721.methods.name().call()
-    const symbol = await contractWrapperErc721.methods.symbol().call()
+  const getERC20Metadata = async (addressErc20: string): Promise<WalletERC20Item> => {
+    const contractErc20Shares = new web3.eth.Contract(erc20SharesAbi as AbiItem[], addressErc20)
+    const balance = await contractErc20Shares.methods.balanceOf(walletAddress).call()
+    const name = await contractErc20Shares.methods.name().call()
+    const symbol = await contractErc20Shares.methods.symbol().call()
 
     return { address: addressErc20, name, symbol, balance }
   }
 
-  const erc20WithBalancePromises: Promise<{ address: string; name: string; symbol: string; balance: number }>[] = []
+  const erc20WithBalancePromises: Promise<WalletERC20Item>[] = []
 
   for (let i = 0; i < erc20.length; i++) {
-    erc20WithBalancePromises.push(getERC20Balance(erc20[i]))
+    erc20WithBalancePromises.push(getERC20Metadata(erc20[i]))
   }
 
   const erc20Items = flatten((await Promise.all(erc20WithBalancePromises)).filter(erc20Item => erc20Item.balance > 0))
 
   const walletItems: WalletItem[] = erc20Items.map(erc20Item => ({
-    erc721: {
-      address: '',
-      tokenId: '',
-      name: '',
-      symbol: '',
-      image_url: ''
-    },
     erc20: {
       address: erc20Item.address,
       name: erc20Item.name,
@@ -159,7 +156,47 @@ async function getERC20Items(walletAddress: string): Promise<WalletItem[]> {
     }
   }))
 
-  return walletItems
+  const getErc721FromErc20 = async (erc20Item: WalletERC20Item): Promise<WalletItem> => {
+    const contractErc20Shares = new web3.eth.Contract(erc20SharesAbi as AbiItem[], erc20Item.address)
+
+    const erc721TokenId = await contractErc20Shares.methods.tokenId().call()
+
+    const wrappedErc721Address = await contractErc20Shares.methods.wrapper().call()
+    const contractErc721Wrapped = new web3.eth.Contract(erc721WrappedAbi as AbiItem[], wrappedErc721Address)
+
+    const erc721Address = await contractErc721Wrapped.methods.target().call()
+    const contractErc721 = new web3.eth.Contract(erc721Abi as AbiItem[], erc721Address)
+
+    const erc721Name = await contractErc721.methods.name().call()
+    const erc721Symbol = await contractErc721.methods.symbol().call()
+
+    const erc721metadata = await getErc721Metadata(erc721Address, erc721TokenId)
+
+    return {
+      erc721: {
+        address: erc721Address,
+        tokenId: erc721TokenId,
+        name: erc721Name,
+        symbol: erc721Symbol,
+        image_url: erc721metadata.image_url,
+        description: erc721metadata.description
+      },
+      erc20: erc20Item
+    }
+  }
+
+  const walletItemsWithErc721Promises: Promise<WalletItem>[] = []
+
+  walletItems.forEach(walletItem => {
+    if (walletItem.erc20) {
+      walletItemsWithErc721Promises.push(getErc721FromErc20(walletItem.erc20))
+    }
+  })
+
+  const walletItemsWithErc721 = await Promise.all(walletItemsWithErc721Promises)
+
+  log(`getERC20Items - end - ${walletAddress} - total:${walletItemsWithErc721.length + 1}`)
+  return walletItemsWithErc721
 }
 
 export const getWalletItems = async (walletAddress: string): Promise<WalletItem[]> => {
