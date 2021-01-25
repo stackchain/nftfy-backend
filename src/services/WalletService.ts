@@ -6,7 +6,7 @@ import erc20SharesAbi from '../abi/erc20shares.json'
 import erc721Abi from '../abi/erc721.json'
 import erc721WrappedAbi from '../abi/erc721wrapped.json'
 import nftfyAbi from '../abi/nftfy.json'
-import { WalletERC20Item, WalletErc721Item, WalletItem } from '../types/EthereumTypes'
+import { WalletERC20Item, WalletErc721Item, WalletItem } from '../types/WalletTypes'
 import initializeWeb3 from './Web3Service'
 
 // TODO: Get from firebase

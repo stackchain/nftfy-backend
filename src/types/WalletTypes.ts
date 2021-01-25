@@ -1,8 +1,3 @@
-export interface ERC20 {
-  address: string
-  balance: number
-}
-
 export interface WalletErc721Item {
   address: string
   tokenId: string
@@ -18,6 +13,7 @@ export interface WalletERC20Item {
   symbol: string
   balance: number
 }
+
 export interface WalletItem {
   erc721?: WalletErc721Item
   erc20?: WalletERC20Item
