@@ -3,5 +3,6 @@ export interface MarketplaceERC20Item {
   tokenId: string
   name: string
   symbol: string
-  securitized?: boolean
+  wrapper: string
+  securitized: boolean
 }

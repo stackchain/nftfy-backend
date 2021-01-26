@@ -50,8 +50,12 @@ const getMarketplaceItems = async () => {
     const name = await contractErc20Shares.methods.name().call()
     const tokenId = await contractErc20Shares.methods.tokenId().call()
     const symbol = await contractErc20Shares.methods.symbol().call()
+    const wrapper = await contractErc20Shares.methods.wrapper().call()
 
-    return { address: addressErc20, tokenId, name, symbol }
+    const contractWrapperErc721 = new web3.eth.Contract(erc721WrappedAbi as AbiItem[], wrapper)
+    const securitized = await contractWrapperErc721.methods.securitized(tokenId).call()
+
+    return { address: addressErc20, tokenId, name, symbol, wrapper, securitized }
   }
 
   const erc20WithMetadataPromises: Promise<MarketplaceERC20Item>[] = []
@@ -60,8 +64,8 @@ const getMarketplaceItems = async () => {
     erc20WithMetadataPromises.push(getERC20Metadata(erc20[i]))
   }
 
-  const erc20Items = flatten(await Promise.all(erc20WithMetadataPromises))
+  const erc20Items = flatten(await Promise.all(erc20WithMetadataPromises)).filter(erc20Item => erc20Item.securitized)
 
-  console.log(erc20Items)
+  return erc20Items
 }
 export default getMarketplaceItems
