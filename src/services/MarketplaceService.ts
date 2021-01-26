@@ -1,3 +1,4 @@
+import axios from 'axios'
 import { log } from 'firebase-functions/lib/logger'
 import { flatten } from 'lodash'
 import { AbiItem } from 'web3-utils'
@@ -74,7 +75,15 @@ const addressesERC721 = [
 ]
 const addressNftfy = '0x727638740980aA0aA0B346d02dd91120Eaac75ed'
 
-const getMarketplaceItems = async () => {
+const getErc20OpenSeaMetadata = async (wrapper: string, tokenId: string) => {
+  const metadata = await axios.get<{ description: string; image_url: string }>(
+    `https://rinkeby-api.opensea.io/api/v1/asset/${wrapper}/${tokenId}/`
+  )
+  const { description, image_url } = metadata.data
+  return { description, image_url }
+}
+
+const getMarketplaceItems = async (): Promise<MarketplaceERC20Item[]> => {
   log(`getMarketplaceItems - start`)
   const web3 = initializeWeb3()
 
@@ -113,12 +122,27 @@ const getMarketplaceItems = async () => {
     const name = await contractErc20Shares.methods.name().call()
     const tokenId = await contractErc20Shares.methods.tokenId().call()
     const symbol = await contractErc20Shares.methods.symbol().call()
-    const wrapper = await contractErc20Shares.methods.wrapper().call()
+    const erc721Wrapper = await contractErc20Shares.methods.wrapper().call()
 
-    const contractWrapperErc721 = new web3.eth.Contract(erc721WrappedAbi as AbiItem[], wrapper)
+    const contractWrapperErc721 = new web3.eth.Contract(erc721WrappedAbi as AbiItem[], erc721Wrapper)
     const securitized = await contractWrapperErc721.methods.securitized(tokenId).call()
+    const erc721Address = await contractWrapperErc721.methods.target().call()
 
-    return { address: addressErc20, tokenId, name, symbol, wrapper, securitized }
+    const { description, image_url } = await getErc20OpenSeaMetadata(erc721Address, tokenId)
+
+    return {
+      address: addressErc20,
+      name,
+      symbol,
+      securitized,
+      erc721: {
+        address: erc721Address,
+        tokenId,
+        wrapper: erc721Wrapper,
+        image_url,
+        description
+      }
+    }
   }
 
   const erc20WithMetadataPromises: Promise<MarketplaceERC20Item>[] = []

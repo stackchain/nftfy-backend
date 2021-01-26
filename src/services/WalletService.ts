@@ -13,7 +13,7 @@ import initializeWeb3 from './Web3Service'
 const addressesERC721 = ['0xE0394f4404182F537AC9F2F9695a4a4CD74a1ea3', '0xe48773a75b337ac258a471c00c6b450907b614bc']
 const addressNftfy = '0x727638740980aA0aA0B346d02dd91120Eaac75ed'
 
-const getErc721Metadata = async (address: string, tokenId: string) => {
+const getErc721OpenSeaMetadata = async (address: string, tokenId: string) => {
   const metadata = await axios.get<{ description: string; image_url: string }>(
     `https://rinkeby-api.opensea.io/api/v1/asset/${address}/${tokenId}/`
   )
@@ -170,7 +170,7 @@ async function getERC20Items(walletAddress: string): Promise<WalletItem[]> {
     const erc721Name = await contractErc721.methods.name().call()
     const erc721Symbol = await contractErc721.methods.symbol().call()
 
-    const erc721metadata = await getErc721Metadata(erc721Address, erc721TokenId)
+    const erc721metadata = await getErc721OpenSeaMetadata(erc721Address, erc721TokenId)
 
     return {
       erc721: {
