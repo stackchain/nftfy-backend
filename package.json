@@ -13,7 +13,8 @@
     "prettier:write": "./node_modules/prettier/bin-prettier.js --write ./src/**/*.{ts,tsx}",
     "prettier": "./node_modules/prettier/bin-prettier.js --check './src/**/*.{ts,tsx}'",
     "lint": "./node_modules/.bin/eslint src/**/*.{ts,tsx}",
-    "firebase": "firebase"
+    "firebase": "firebase",
+    "serve": "./node_modules/nodemon/bin/nodemon.js src/Serve.ts"
   },
   "keywords": [],
   "author": "Nftfy Team",

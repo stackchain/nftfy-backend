@@ -60,7 +60,7 @@ async function getERC721Items(walletAddress: string): Promise<WalletErc721Item[]
       image_url: string
     }>[] = []
 
-    erc721Items.forEach(erc721Item => erc721ItemsMetadataPromises.push(getErc721Metadata(erc721Item.address, erc721Item.tokenId)))
+    erc721Items.forEach(erc721Item => erc721ItemsMetadataPromises.push(getErc721OpenSeaMetadata(erc721Item.address, erc721Item.tokenId)))
 
     const erc721ItemsMetadata = await Promise.all(erc721ItemsMetadataPromises)
 

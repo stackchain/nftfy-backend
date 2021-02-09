@@ -3,7 +3,7 @@ import * as Tracing from '@sentry/tracing'
 import dotenv from 'dotenv'
 import express from 'express'
 import * as functions from 'firebase-functions'
-import router from './routes'
+import router from './Routes'
 
 dotenv.config()
 
