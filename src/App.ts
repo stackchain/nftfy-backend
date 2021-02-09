@@ -13,7 +13,7 @@ Sentry.init({
   dsn: 'https://abb429f871be437e84c869c5ed1f421b@o501737.ingest.sentry.io/5591829',
   integrations: [new Sentry.Integrations.Http({ tracing: true }), new Tracing.Integrations.Express({ app })],
   tracesSampleRate: 1.0,
-  environment: 'production'
+  environment: 'development'
 })
 
 app.use(Sentry.Handlers.requestHandler())
