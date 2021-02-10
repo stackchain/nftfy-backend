@@ -1,5 +1,6 @@
 import * as Sentry from '@sentry/node'
 import * as Tracing from '@sentry/tracing'
+import cors from 'cors'
 import dotenv from 'dotenv'
 import express from 'express'
 import * as functions from 'firebase-functions'
@@ -20,6 +21,7 @@ app.use(Sentry.Handlers.requestHandler())
 app.use(Sentry.Handlers.tracingHandler())
 app.use(Sentry.Handlers.errorHandler())
 
+app.use(cors())
 app.use('/', router)
 
 exports.api = functions.https.onRequest(app)
