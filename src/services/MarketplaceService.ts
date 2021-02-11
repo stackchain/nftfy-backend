@@ -15,11 +15,11 @@ import initializeWeb3 from './Web3Service'
 const network = process.env.NETWORK === '1'
 
 const getErc20OpenSeaMetadata = async (wrapper: string, tokenId: string) => {
-  const metadata = await axios.get<{ description: string; image_url: string }>(
+  const metadata = await axios.get<{ description: string; image_url: string; name: string }>(
     `https://${network ? '' : 'rinkeby-'}api.opensea.io/api/v1/asset/${wrapper}/${tokenId}/`
   )
-  const { description, image_url } = metadata.data
-  return { description, image_url }
+  const { description, image_url, name } = metadata.data
+  return { description, image_url, name }
 }
 
 export const getMarketplaceItems = async (page?: number, limit?: number): Promise<Paged<MarketplaceERC20Item[]>> => {
@@ -61,7 +61,7 @@ export const getMarketplaceItems = async (page?: number, limit?: number): Promis
 
   const getERC20Metadata = async (addressErc20: string): Promise<MarketplaceERC20Item> => {
     const contractErc20Shares = new web3.eth.Contract(erc20SharesAbi as AbiItem[], addressErc20)
-    const name = await contractErc20Shares.methods.name().call()
+    const erc20Name = await contractErc20Shares.methods.name().call()
     const tokenId = await contractErc20Shares.methods.tokenId().call()
     const symbol = await contractErc20Shares.methods.symbol().call()
     const erc721Wrapper = await contractErc20Shares.methods.wrapper().call()
@@ -70,11 +70,11 @@ export const getMarketplaceItems = async (page?: number, limit?: number): Promis
     const securitized = await contractWrapperErc721.methods.securitized(tokenId).call()
     const erc721Address = await contractWrapperErc721.methods.target().call()
 
-    const { description, image_url } = await getErc20OpenSeaMetadata(erc721Address, tokenId)
+    const { description, image_url, name } = await getErc20OpenSeaMetadata(erc721Address, tokenId)
 
     return {
       address: addressErc20,
-      name,
+      name: erc20Name,
       symbol,
       securitized,
       erc721: {
@@ -82,7 +82,8 @@ export const getMarketplaceItems = async (page?: number, limit?: number): Promis
         tokenId,
         wrapper: erc721Wrapper,
         image_url,
-        description
+        description,
+        name
       }
     }
   }
@@ -105,7 +106,7 @@ export const getMarketplaceItemByAddress = async (erc20Address: string): Promise
 
   const getERC20Metadata = async (address: string): Promise<MarketplaceERC20Item> => {
     const contractErc20Shares = new web3.eth.Contract(erc20SharesAbi as AbiItem[], address)
-    const name = await contractErc20Shares.methods.name().call()
+    const erc20Name = await contractErc20Shares.methods.name().call()
     const tokenId = await contractErc20Shares.methods.tokenId().call()
     const symbol = await contractErc20Shares.methods.symbol().call()
     const erc721Wrapper = await contractErc20Shares.methods.wrapper().call()
@@ -114,14 +115,15 @@ export const getMarketplaceItemByAddress = async (erc20Address: string): Promise
     const securitized = await contractWrapperErc721.methods.securitized(tokenId).call()
     const erc721Address = await contractWrapperErc721.methods.target().call()
 
-    const { description, image_url } = await getErc20OpenSeaMetadata(erc721Address, tokenId)
+    const { description, image_url, name } = await getErc20OpenSeaMetadata(erc721Address, tokenId)
 
     return {
       address,
-      name,
+      name: erc20Name,
       symbol,
       securitized,
       erc721: {
+        name,
         address: erc721Address,
         tokenId,
         wrapper: erc721Wrapper,
