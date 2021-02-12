@@ -13,6 +13,8 @@ import paginator from './UtilService'
 import initializeWeb3 from './Web3Service'
 
 const network = process.env.NETWORK === '1'
+const addressNftfy = network ? addressNftfyMainnet : addressNftfyRinkeby
+const addressesERC721 = network ? addressesERC721Mainnet : addressesERC721Rinkeby
 
 const getErc20OpenSeaMetadata = async (address: string, tokenId: string) => {
   let name = ''
@@ -37,9 +39,6 @@ const getErc20OpenSeaMetadata = async (address: string, tokenId: string) => {
 export const getMarketplaceItems = async (page?: number, limit?: number): Promise<Paged<MarketplaceERC20Item[]>> => {
   log(`getMarketplaceItems - start`)
   const web3 = initializeWeb3()
-
-  const addressNftfy = network ? addressNftfyMainnet : addressNftfyRinkeby
-  const addressesERC721 = network ? addressesERC721Mainnet : addressesERC721Rinkeby
 
   const contractNftfy = new web3.eth.Contract(nftfyAbi as AbiItem[], addressNftfy)
 

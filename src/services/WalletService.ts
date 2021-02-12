@@ -6,12 +6,14 @@ import erc20SharesAbi from '../abi/erc20shares.json'
 import erc721Abi from '../abi/erc721.json'
 import erc721WrappedAbi from '../abi/erc721wrapped.json'
 import nftfyAbi from '../abi/nftfy.json'
+import { addressesERC721Mainnet, addressNftfyMainnet } from '../assets/mainnet'
+import { addressesERC721Rinkeby, addressNftfyRinkeby } from '../assets/rinkeby'
 import { WalletERC20Item, WalletErc721Item, WalletItem } from '../types/WalletTypes'
 import initializeWeb3 from './Web3Service'
 
-// TODO: Get from firebase
-const addressesERC721 = ['0xE0394f4404182F537AC9F2F9695a4a4CD74a1ea3', '0xe48773a75b337ac258a471c00c6b450907b614bc']
-const addressNftfy = '0x727638740980aA0aA0B346d02dd91120Eaac75ed'
+const network = process.env.NETWORK === '1'
+const addressNftfy = network ? addressNftfyMainnet : addressNftfyRinkeby
+const addressesERC721 = network ? addressesERC721Mainnet : addressesERC721Rinkeby
 
 const getErc721OpenSeaMetadata = async (address: string, tokenId: string) => {
   let description = ''
