@@ -6,14 +6,15 @@ import erc20SharesAbi from '../abi/erc20shares.json'
 import erc721Abi from '../abi/erc721.json'
 import erc721WrappedAbi from '../abi/erc721wrapped.json'
 import nftfyAbi from '../abi/nftfy.json'
-import { addressesERC721Mainnet, addressNftfyMainnet } from '../assets/mainnet'
-import { addressesERC721Rinkeby, addressNftfyRinkeby } from '../assets/rinkeby'
+import { addressesERC721Mainnet, addressNftfyMainnet, addressNfyMainnet } from '../assets/mainnet'
+import { addressesERC721Rinkeby, addressNftfyRinkeby, addressNfyRinkeby } from '../assets/rinkeby'
 import { WalletERC20Item, WalletErc721Item, WalletItem } from '../types/WalletTypes'
 import initializeWeb3 from './Web3Service'
 
 const network = process.env.NETWORK === '1'
 const addressNftfy = network ? addressNftfyMainnet : addressNftfyRinkeby
 const addressesERC721 = network ? addressesERC721Mainnet : addressesERC721Rinkeby
+const addressNfy = network ? addressNfyMainnet : addressNfyRinkeby
 
 const getErc721OpenSeaMetadata = async (address: string, tokenId: string) => {
   let description = ''
@@ -229,6 +230,16 @@ export const getWalletItems = async (walletAddress: string): Promise<WalletItem[
   })
 
   return items
+}
+
+export const getNfyBalance = async (walletAddress: string): Promise<{ balance: number }> => {
+  log(`getNfyBalance - start - ${walletAddress}`)
+  const web3 = initializeWeb3()
+
+  const contractNfy = new web3.eth.Contract(erc20SharesAbi as AbiItem[], addressNfy)
+  const balance = await contractNfy.methods.balanceOf(walletAddress).call()
+
+  return { balance: Number(balance) / 10 ** 18 }
 }
 
 export default getWalletItems

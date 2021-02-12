@@ -1,3 +1,5 @@
+export const addressNfyRinkeby = '0x5592ec0cfb4dbc12d3ab100b257153436a1f0fea'
+
 export const addressNftfyRinkeby = '0x727638740980aA0aA0B346d02dd91120Eaac75ed'
 
 export const addressesERC721Rinkeby = [
