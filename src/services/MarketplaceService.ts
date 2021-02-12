@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { log } from 'firebase-functions/lib/logger'
+import { log, warn } from 'firebase-functions/lib/logger'
 import { flatten } from 'lodash'
 import { AbiItem } from 'web3-utils'
 import erc20SharesAbi from '../abi/erc20shares.json'
@@ -14,11 +14,23 @@ import initializeWeb3 from './Web3Service'
 
 const network = process.env.NETWORK === '1'
 
-const getErc20OpenSeaMetadata = async (wrapper: string, tokenId: string) => {
-  const metadata = await axios.get<{ description: string; image_url: string; name: string }>(
-    `https://${network ? '' : 'rinkeby-'}api.opensea.io/api/v1/asset/${wrapper}/${tokenId}/`
-  )
-  const { description, image_url, name } = metadata.data
+const getErc20OpenSeaMetadata = async (address: string, tokenId: string) => {
+  let name = ''
+  let description = ''
+  let image_url = ''
+
+  try {
+    const metadata = await axios.get<{ description: string; image_url: string; name: string }>(
+      `https://rinkeby-api.opensea.io/api/v1/asset/${address}/${tokenId}/`
+    )
+
+    name = metadata.data.name
+    description = metadata.data.description
+    image_url = metadata.data.image_url
+  } catch (error) {
+    warn('getErc721OpenSeaMetadata - not found - ', address, tokenId)
+  }
+
   return { description, image_url, name }
 }
 

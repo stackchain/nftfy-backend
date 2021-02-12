@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { log } from 'firebase-functions/lib/logger'
+import { log, warn } from 'firebase-functions/lib/logger'
 import { flatten } from 'lodash'
 import { AbiItem } from 'web3-utils'
 import erc20SharesAbi from '../abi/erc20shares.json'
@@ -14,11 +14,19 @@ const addressesERC721 = ['0xE0394f4404182F537AC9F2F9695a4a4CD74a1ea3', '0xe48773
 const addressNftfy = '0x727638740980aA0aA0B346d02dd91120Eaac75ed'
 
 const getErc721OpenSeaMetadata = async (address: string, tokenId: string) => {
-  const metadata = await axios.get<{ description: string; image_url: string }>(
-    `https://rinkeby-api.opensea.io/api/v1/asset/${address}/${tokenId}/`
-  )
+  let description = ''
+  let image_url = ''
 
-  const { description, image_url } = metadata.data
+  try {
+    const metadata = await axios.get<{ description: string; image_url: string }>(
+      `https://rinkeby-api.opensea.io/api/v1/asset/${address}/${tokenId}/`
+    )
+
+    description = metadata.data.description
+    image_url = metadata.data.image_url
+  } catch (error) {
+    warn('getErc721OpenSeaMetadata - not found - ', address, tokenId)
+  }
 
   return { address, tokenId, description, image_url }
 }
